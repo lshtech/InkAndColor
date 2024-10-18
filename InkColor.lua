@@ -18,11 +18,6 @@ function Card:get_suit()
     return self.base.suit
 end
 
-local function is_face(card)
-    local id = card:get_id()
-    return id == 11 or id == 12 or id == 13
-end
-
 function shakecard(self)
     G.E_MANAGER:add_event(Event({
         func = function()
@@ -30,76 +25,6 @@ function shakecard(self)
             return true
         end
     }))
-end
-
-local function create_consumable(card_type,tag,message,extra)
-    extra=extra or {}
-    
-    G.GAME.consumeable_buffer = G.GAME.consumeable_buffer + 1
-    G.E_MANAGER:add_event(Event({
-        trigger = 'before',
-        delay = 0.0,
-        func = (function()
-                local card = create_card(card_type,G.consumeables, nil, nil, nil, nil, extra.forced_key or nil, tag)
-                card:add_to_deck()
-                if extra.edition~=nil then
-                    card:set_edition(extra.edition,true,false)
-                end
-                if extra.eternal~=nil then
-                    card.ability.eternal=extra.eternal
-                end
-                if extra.perishable~=nil then
-                    card.ability.perishable = extra.perishable
-                    if tag=='v_epilogue' then
-                        card.ability.perish_tally=get_voucher('epilogue').config.extra
-                    else card.ability.perish_tally = G.GAME.perishable_rounds
-                    end
-                end
-                if extra.extra_ability~=nil then
-                    card.ability[extra.extra_ability]=true
-                end
-                G.consumeables:emplace(card)
-                G.GAME.consumeable_buffer = 0
-                if message~=nil then
-                    card_eval_status_text(card,'extra',nil,nil,nil,{message=message})
-                end
-        return true
-    end)}))
-end
-
-local function create_joker(card_type,tag,message,extra)
-    extra=extra or {}
-    
-    G.GAME.joker_buffer = G.GAME.joker_buffer + 1
-    G.E_MANAGER:add_event(Event({
-        trigger = 'before',
-        delay = 0.0,
-        func = (function()
-                local card = create_card(card_type, G.joker, nil, nil, nil, nil, extra.forced_key or nil, tag)
-                card:add_to_deck()
-                if extra.edition~=nil then
-                    card:set_edition(extra.edition,true,false)
-                end
-                if extra.eternal~=nil then
-                    card.ability.eternal=extra.eternal
-                end
-                if extra.perishable~=nil then
-                    card.ability.perishable = extra.perishable
-                    if tag=='v_epilogue' then
-                        card.ability.perish_tally=get_voucher('epilogue').config.extra
-                    else card.ability.perish_tally = G.GAME.perishable_rounds
-                    end
-                end
-                if extra.extra_ability~=nil then
-                    card.ability[extra.extra_ability]=true
-                end
-                G.jokers:emplace(card)
-                G.GAME.joker_buffer = 0
-                if message~=nil then
-                    card_eval_status_text(card,'extra',nil,nil,nil,{message=message})
-                end
-        return true
-    end)}))
 end
 
 local BackApply_to_run_ref = Back.apply_to_run
@@ -115,9 +40,7 @@ function Back.apply_to_run(self)
                         G.playing_cards[i]:change_suit("ink_Inks")
                     elseif i >= 14 and i <= 26 then
                         G.playing_cards[i]:change_suit("ink_Colors")
-                    elseif i >= 27 and i <= 39 then
-                        G.playing_cards[i]:start_dissolve(nil, true)
-                    elseif i >= 40 and i <= 52 then
+                    elseif i >= 27 then
                         G.playing_cards[i]:start_dissolve(nil, true)
                     end
                 end
@@ -137,6 +60,17 @@ SMODS.Atlas { key = 'Consumables', path = 'Consumables.png', px = 71, py = 95 }
 SMODS.Atlas { key = 'Decks', path = 'Decks.png', px = 71, py = 95 }
 SMODS.Atlas { key = 'Blind', path = 'BlindChips.png', px = 34, py = 34, frames = 21, atlas_table = 'ANIMATION_ATLAS' }
 SMODS.Atlas { key = 'modicon', path = 'ModIcon.png', px = 18, py = 18 }
+
+local function allow_suits(self, args)
+    if args and args.initial_deck then
+        if SMODS.findModByID("SixSuits") then
+            return six_suits_mod.config.allow_all_suits
+        else
+            return true
+        end
+    end
+    return true
+end
 
 -- Suits
 SMODS.Suit {
@@ -158,6 +92,7 @@ SMODS.Suit {
             plural = 'Inks',
         }
     },
+    in_pool = allow_suits
 }
 SMODS.Suit {
 
@@ -178,6 +113,7 @@ SMODS.Suit {
             plural = 'Colors',
         }
     },
+    in_pool = allow_suits
 }
 
 -- Blinds
@@ -196,7 +132,10 @@ SMODS.Blind {
                 'are debuffed',
             }
         }
-    }
+    },
+    in_pool = function(self, args)
+        return start_suit
+    end
 }
 SMODS.Blind {
     key = "the_drain",
@@ -213,7 +152,10 @@ SMODS.Blind {
                 'are debuffed',
             }
         }
-    }
+    },
+    in_pool = function(self, args)
+        return start_suit
+    end
 }
 
 -- Decks
