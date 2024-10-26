@@ -134,7 +134,7 @@ SMODS.Blind {
         }
     },
     in_pool = function(self, args)
-        return start_suit
+        return allow_suits
     end
 }
 SMODS.Blind {
@@ -154,7 +154,7 @@ SMODS.Blind {
         }
     },
     in_pool = function(self, args)
-        return start_suit
+        return allow_suits
     end
 }
 
