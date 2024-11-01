@@ -62,12 +62,8 @@ SMODS.Atlas { key = 'Blind', path = 'BlindChips.png', px = 34, py = 34, frames =
 SMODS.Atlas { key = 'modicon', path = 'ModIcon.png', px = 18, py = 18 }
 
 local function allow_suits(self, args)
-    if args and args.initial_deck then
-        if SMODS.findModByID("SixSuits") then
-            return six_suits_mod.config.allow_all_suits
-        else
-            return true
-        end
+    if args and args.initial_deck and SMODS.findModByID("SixSuits") then
+        return SMODS.findModByID("SixSuits").config.allow_all_suits
     end
     return true
 end
